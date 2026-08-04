@@ -3,64 +3,38 @@ package com.quoc.identity.service.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+
+@Getter
+@Setter
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
 
 public class UserCreationRequest {
 
     @NotBlank(message = "Username must not be blank")
-    private String username;
+    @Size(min = 4, message = "USERNAME_INVALID")
+     String username;
 
     @NotBlank(message = "Password must not be blank")
-    @Size(min = 6, message = "Password must be at least 6 characters")
-    private String password;
+    @Size(min = 8, message = "INVALID_PASSWORD")
+    String password;
 
     @NotBlank(message = "Firstname must not be blank")
-    private String firstname;
+    String firstname;
 
     @NotBlank(message = "Lastname must not be blank")
-    private String lastname;
+    String lastname;
 
     @Past(message = "Date of birth must be in the past")
-    private LocalDate dob;
+    LocalDate dob;
 
-    public String getUsername() {
-        return username;
-    }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getFirstname() {
-        return firstname;
-    }
-
-    public void setFirstname(String firstname) {
-        this.firstname = firstname;
-    }
-
-    public String getLastname() {
-        return lastname;
-    }
-
-    public void setLastname(String lastname) {
-        this.lastname = lastname;
-    }
-
-    public LocalDate getDob() {
-        return dob;
-    }
-
-    public void setDob(LocalDate dob) {
-        this.dob = dob;
-    }
 }

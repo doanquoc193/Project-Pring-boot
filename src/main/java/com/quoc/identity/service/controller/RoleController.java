@@ -3,6 +3,7 @@ package com.quoc.identity.service.controller;
 import com.quoc.identity.service.dto.request.ApiResponse;
 import com.quoc.identity.service.entity.Role;
 import com.quoc.identity.service.service.RoleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,10 +12,11 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/roles")
+@RequiredArgsConstructor
+
 public class RoleController {
 
-    @Autowired
-    private RoleService roleService;
+    RoleService roleService;
 
     // CREATE ROLE
     @PostMapping

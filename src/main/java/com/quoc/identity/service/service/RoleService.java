@@ -4,7 +4,6 @@ import com.quoc.identity.service.entity.Role;
 import com.quoc.identity.service.exception.AppException;
 import com.quoc.identity.service.exception.ErrorCode;
 import com.quoc.identity.service.respository.RoleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Service
 public class RoleService {
 
-    @Autowired
+
     private RoleRepository roleRepository;
 
     // CREATE ROLE

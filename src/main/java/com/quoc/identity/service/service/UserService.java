@@ -2,26 +2,32 @@ package com.quoc.identity.service.service;
 
 import com.quoc.identity.service.dto.request.UserCreationRequest;
 import com.quoc.identity.service.dto.request.UserUpdateRequest;
+import com.quoc.identity.service.dto.response.UserResponse;
 import com.quoc.identity.service.entity.User;
 import com.quoc.identity.service.exception.AppException;
 import com.quoc.identity.service.exception.ErrorCode;
+import com.quoc.identity.service.mapper.UserMapper;
 import com.quoc.identity.service.respository.UserRepository;
 import com.quoc.identity.service.entity.Role;
 import com.quoc.identity.service.respository.RoleRepository;
 
-import java.util.HashSet;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-
+    UserMapper userMapper;
+    UserRepository userRepository;
 
     // =========================================================
     // CREATE USER
@@ -38,13 +44,10 @@ public class UserService {
         }
 
         // Tạo User mới
-        User user = new User();
+        User user = userMapper.toUser(request);
 
-        user.setUsername(request.getUsername());
-        user.setPassword(request.getPassword());
-        user.setFirstname(request.getFirstname());
-        user.setLastname(request.getLastname());
-        user.setDob(request.getDob());
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Lưu vào database
         return userRepository.save(user);
@@ -55,23 +58,19 @@ public class UserService {
     // UPDATE USER
     // =========================================================
 
-    public User updateUser(
+    public UserResponse updateUser(
             UUID userId,
             UserUpdateRequest request
     ) {
 
         // Tìm User
         // Nếu không tìm thấy -> AppException
-        User user = getUser(userId);
-
-        // Cập nhật thông tin
-        user.setPassword(request.getPassword());
-        user.setFirstname(request.getFirstname());
-        user.setLastname(request.getLastname());
-        user.setDob(request.getDob());
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new RuntimeException("User not found"));
+        userMapper.updateUser(user, request);
 
         // Lưu lại database
-        return userRepository.save(user);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
 
@@ -108,18 +107,14 @@ public class UserService {
     // GET USER BY ID
     // =========================================================
 
-    public User getUser(UUID id) {
+    public UserResponse getUser(UUID id) {
+        return userMapper.toUserResponse(userRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("User not found")));
 
-        return userRepository.findById(id)
-                .orElseThrow(() ->
-                        new AppException(
-                                ErrorCode.USER_NOT_FOUND
-                        )
-                );
     }
 
-    @Autowired
-    private RoleRepository roleRepository;
+
+    RoleRepository roleRepository;
 
     public User assignRole(UUID userId, UUID roleId) {
 

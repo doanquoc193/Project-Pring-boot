@@ -19,3 +19,5 @@ spring:
         format_sql: true
 
 
+jwt :
+  signerKey: "4b5e1eb526c8e21fa883eeb1227174864b61afa8a52a4be8e0020a85f3cd7dc0"
