@@ -1,8 +1,19 @@
 package com.quoc.identity.service.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+
+@Getter
 
 public enum ErrorCode {
+
+    UNCATEGORIZED_EXCEPTION(
+            8888,
+            "Uncategorized error",
+            HttpStatus.INTERNAL_SERVER_ERROR
+
+    ),
 
     INVALID_KEY(
             9999,
@@ -31,20 +42,32 @@ public enum ErrorCode {
 
     UNAUTHENTICATED(
             1008,
-            "authenticated",
-            HttpStatus.BAD_REQUEST
+            "Authenticated",
+            HttpStatus.UNAUTHORIZED
+    ),
+
+    UNAUTHORIZED(
+            1009,
+            "You do not have permission",
+            HttpStatus.FORBIDDEN
     ),
 
 
     INVALID_PASSWORD(
             1003,
-            "Password must be at least 8 characters ",
+            "Password must be at least {min} characters ",
+            HttpStatus.BAD_REQUEST
+    ),
+
+    INVALID_DOB(
+            1010,
+            "Your age must be at least {min}",
             HttpStatus.BAD_REQUEST
     ),
 
     USERNAME_INVALID(
             1004,
-            "Username must be at least 4 character",
+            "Username must be at least {min} character",
             HttpStatus.BAD_REQUEST
     ),
 
@@ -62,27 +85,17 @@ public enum ErrorCode {
 
     private final int code;
     private final String message;
-    private final HttpStatus httpStatus;
+    private HttpStatusCode statusCode;
 
     ErrorCode(
             int code,
             String message,
-            HttpStatus httpStatus
+            HttpStatusCode statusCode
     ) {
         this.code = code;
         this.message = message;
-        this.httpStatus = httpStatus;
+        this.statusCode = statusCode;
     }
 
-    public int getCode() {
-        return code;
-    }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public HttpStatus getHttpStatus() {
-        return httpStatus;
-    }
 }

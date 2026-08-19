@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users")
+@Builder
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,10 +37,7 @@ public class User {
     LocalDate dob;
 
     @ManyToMany
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    Set<Role> roles = new HashSet<>();
+    Set<Role> roles;
+
+
 }

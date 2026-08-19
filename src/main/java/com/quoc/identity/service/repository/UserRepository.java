@@ -1,4 +1,4 @@
-package com.quoc.identity.service.respository;
+package com.quoc.identity.service.repository;
 
 import com.quoc.identity.service.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;

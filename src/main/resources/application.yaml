@@ -18,6 +18,13 @@ spring:
       hibernate:
         format_sql: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 
 jwt :
   signerKey: "4b5e1eb526c8e21fa883eeb1227174864b61afa8a52a4be8e0020a85f3cd7dc0"
+  valid-duration : 3600  # in second
+  refreshable-duration : 360000 #in second

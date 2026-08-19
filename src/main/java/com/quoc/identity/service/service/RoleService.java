@@ -1,60 +1,48 @@
 package com.quoc.identity.service.service;
 
-import com.quoc.identity.service.entity.Role;
-import com.quoc.identity.service.exception.AppException;
-import com.quoc.identity.service.exception.ErrorCode;
-import com.quoc.identity.service.respository.RoleRepository;
+import com.quoc.identity.service.dto.request.RoleRequest;
+import com.quoc.identity.service.dto.response.RoleResponse;
+import com.quoc.identity.service.mapper.RoleMapper;
+import com.quoc.identity.service.repository.PermissionRepository;
+import com.quoc.identity.service.repository.RoleRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
 public class RoleService {
+    RoleRepository roleRepository;
+    RoleMapper roleMapper;
+    private final PermissionRepository permissionRepository;
 
+    public RoleResponse create(RoleRequest request){
+        var role = roleMapper.toRole(request);
 
-    private RoleRepository roleRepository;
+        var permissions =  permissionRepository.findAllById(request.getPermissions());
+        role.setPermissions(new HashSet<>(permissions));
 
-    // CREATE ROLE
-    public Role createRole(Role role) {
+        role = roleRepository.save(role);
+        return roleMapper.toRoleResponse(role);
 
-        if (roleRepository.existsByName(role.getName())) {
-            throw new AppException(ErrorCode.ROLE_EXISTED);
-        }
-
-        return roleRepository.save(role);
     }
 
-    // GET ALL ROLES
-    public List<Role> getRoles() {
-        return roleRepository.findAll();
+    public List<RoleResponse> getAll(){
+        return roleRepository.findAll()
+                .stream()
+                .map(roleMapper::toRoleResponse)
+                .toList();
     }
 
-    // GET ROLE BY ID
-    public Role getRole(UUID roleId) {
+    public void delete(String role){
 
-        return roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.ROLE_NOT_FOUND)
-                );
-    }
-
-    // UPDATE ROLE
-    public Role updateRole(UUID roleId, Role request) {
-
-        Role role = getRole(roleId);
-
-        role.setName(request.getName());
-        role.setDescription(request.getDescription());
-
-        return roleRepository.save(role);
-    }
-
-    // DELETE ROLE
-    public void deleteRole(UUID roleId) {
-
-        Role role = getRole(roleId);
-
-        roleRepository.delete(role);
+        roleRepository.deleteById(role);
     }
 }

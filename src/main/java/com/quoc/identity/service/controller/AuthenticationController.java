@@ -1,9 +1,7 @@
 package com.quoc.identity.service.controller;
 
 import com.nimbusds.jose.JOSEException;
-import com.quoc.identity.service.dto.request.ApiResponse;
-import com.quoc.identity.service.dto.request.AuthenticationRequest;
-import com.quoc.identity.service.dto.request.IntrospectRequest;
+import com.quoc.identity.service.dto.request.*;
 import com.quoc.identity.service.dto.response.AuthenticationResponse;
 import com.quoc.identity.service.dto.response.IntrospectResponse;
 import com.quoc.identity.service.service.AuthenticationService;
@@ -42,4 +40,23 @@ public class AuthenticationController {
                 .build();
 
     }
+
+    @PostMapping("/logout")
+    ApiResponse<Void> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
+        authenticationService.logout(request);
+        return ApiResponse.<Void>builder()
+                .build();
+
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+            throws ParseException, JOSEException {
+        var result = authenticationService.refreshToken(request);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
+    }
 }
+

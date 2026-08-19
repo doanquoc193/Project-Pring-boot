@@ -12,11 +12,14 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -43,9 +46,14 @@ public class UserController {
 
     // GET ALL USERS
     @GetMapping
-    public ApiResponse<List<User>> getUsers() {
+    public ApiResponse<List<UserResponse>> getUsers() {
 
-        ApiResponse<List<User>> response = new ApiResponse<>();
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        log.info("Username: {}", authentication.getName());
+        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
+
+        ApiResponse<List<UserResponse>> response = new ApiResponse<>();
 
         response.setResult(
                 userService.getUsers()
@@ -57,8 +65,18 @@ public class UserController {
 
     // GET USER BY ID
     @GetMapping("/{userId}")
-    UserResponse getUser(@PathVariable("userId") UUID userId){
-        return userService.getUser(userId);
+    ApiResponse<UserResponse> getUser(@PathVariable("userId") UUID userId){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getUser(userId))
+                .build();
+
+    }
+
+    @GetMapping("/myInfo")
+    ApiResponse<UserResponse> getMyInfo(){
+        return ApiResponse.<UserResponse>builder()
+                .result(userService.getMyInfo())
+                .build();
 
     }
 
@@ -71,11 +89,6 @@ public class UserController {
         return userService.updateUser(userId, request);
 
     }
-
-
-
-
-
 
 
     // DELETE USER
@@ -93,34 +106,5 @@ public class UserController {
         return response;
     }
 
-    //Roles
-    @PostMapping("/{userId}/roles/{roleId}")
-    public ApiResponse<User> assignRole(
-            @PathVariable UUID userId,
-            @PathVariable UUID roleId
-    ) {
 
-        ApiResponse<User> response = new ApiResponse<>();
-
-        response.setResult(
-                userService.assignRole(userId, roleId)
-        );
-
-        return response;
-    }
-
-    @DeleteMapping("/{userId}/roles/{roleId}")
-    public ApiResponse<User> removeRole(
-            @PathVariable UUID userId,
-            @PathVariable UUID roleId
-    ) {
-
-        ApiResponse<User> response = new ApiResponse<>();
-
-        response.setResult(
-                userService.removeRole(userId, roleId)
-        );
-
-        return response;
-    }
 }

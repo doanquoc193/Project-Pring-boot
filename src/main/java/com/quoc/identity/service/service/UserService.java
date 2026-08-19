@@ -7,27 +7,33 @@ import com.quoc.identity.service.entity.User;
 import com.quoc.identity.service.exception.AppException;
 import com.quoc.identity.service.exception.ErrorCode;
 import com.quoc.identity.service.mapper.UserMapper;
-import com.quoc.identity.service.respository.UserRepository;
-import com.quoc.identity.service.entity.Role;
-import com.quoc.identity.service.respository.RoleRepository;
+import com.quoc.identity.service.repository.RoleRepository;
+import com.quoc.identity.service.repository.UserRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE,makeFinal = true)
+@Slf4j
 public class UserService {
 
     UserMapper userMapper;
     UserRepository userRepository;
+    PasswordEncoder passwordEncoder;
+    RoleRepository roleRepository;
 
     // =========================================================
     // CREATE USER
@@ -37,22 +43,44 @@ public class UserService {
 
         // Kiểm tra username đã tồn tại
         if (userRepository.existsByUsername(request.getUsername())) {
-
-            throw new AppException(
-                    ErrorCode.USER_EXISTED
-            );
+            throw new AppException(ErrorCode.USER_EXISTED);
         }
 
         // Tạo User mới
         User user = userMapper.toUser(request);
 
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        // Mã hóa password
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // Lưu vào database
+        // Kiểm tra roles có được gửi lên không
+        if (request.getRoles() == null || request.getRoles().isEmpty()) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
+
+        // Tìm role trong database
+        var roles = roleRepository.findAllById(request.getRoles());
+
+        // Kiểm tra tất cả role có tồn tại không
+        if (roles.size() != request.getRoles().size()) {
+            throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+        }
+
+        // Gán role cho user
+        user.setRoles(new HashSet<>(roles));
+
+        // Lưu user
         return userRepository.save(user);
     }
 
+    public UserResponse getMyInfo(){
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+
+        User user = userRepository.findByUsername(name).orElseThrow(
+                ()-> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return userMapper.toUserResponse(user);
+    }
 
     // =========================================================
     // UPDATE USER
@@ -63,14 +91,33 @@ public class UserService {
             UserUpdateRequest request
     ) {
 
-        // Tìm User
-        // Nếu không tìm thấy -> AppException
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new AppException(ErrorCode.USER_NOT_FOUND)
+                );
+
         userMapper.updateUser(user, request);
 
-        // Lưu lại database
-        return userMapper.toUserResponse(userRepository.save(user));
+        if (request.getPassword() != null) {
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword())
+            );
+        }
+
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+
+            var roles = roleRepository.findAllById(request.getRoles());
+
+            if (roles.size() != request.getRoles().size()) {
+                throw new AppException(ErrorCode.ROLE_NOT_FOUND);
+            }
+
+            user.setRoles(new HashSet<>(roles));
+        }
+
+        return userMapper.toUserResponse(
+                userRepository.save(user)
+        );
     }
 
 
@@ -93,13 +140,18 @@ public class UserService {
     }
 
 
+
+
     // =========================================================
     // GET ALL USERS
     // =========================================================
 
-    public List<User> getUsers() {
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserResponse> getUsers() {
+        log.info("In method get Users");
 
-        return userRepository.findAll();
+        return userRepository.findAll().stream()
+                .map(userMapper::toUserResponse).toList();
     }
 
 
@@ -107,46 +159,14 @@ public class UserService {
     // GET USER BY ID
     // =========================================================
 
+    @PostAuthorize("returnObject.username == authentication.name")
     public UserResponse getUser(UUID id) {
+        log.info("In method get user by Id");
         return userMapper.toUserResponse(userRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("User not found")));
+                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED)));
 
     }
 
 
-    RoleRepository roleRepository;
 
-    public User assignRole(UUID userId, UUID roleId) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.USER_NOT_FOUND)
-                );
-
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.ROLE_NOT_FOUND)
-                );
-
-        user.getRoles().add(role);
-
-        return userRepository.save(user);
-    }
-
-    public User removeRole(UUID userId, UUID roleId) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.USER_NOT_FOUND)
-                );
-
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.ROLE_NOT_FOUND)
-                );
-
-        user.getRoles().remove(role);
-
-        return userRepository.save(user);
-    }
 }
